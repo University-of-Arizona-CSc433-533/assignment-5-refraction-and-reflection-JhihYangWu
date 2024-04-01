@@ -353,7 +353,7 @@ function programBillboard(){
 					"// Multiply the position by the matrix.\n"+
 					"gl_Position = u_worldViewProjection * a_position;\n"+
 				"}";
-	var fShaderObj = 	"precision mediump float;\n"+
+	var fShaderObj = 	"precision highp float;\n"+
 					"varying vec3 v_normal;\n"+
 					"varying vec2 v_texcoord;\n"+
 					"uniform vec3 u_lightDirection;\n"+
@@ -363,12 +363,14 @@ function programBillboard(){
 					"vec3 linInterp(vec3 a, vec3 b, float t);\n"+
 					"void main() {\n"+
 						"float A = 0.01;\n"+
-						"float lambda = 0.01;\n"+
+						"float lambda = 0.02;\n"+
 						// 1. calculate normal based on water ripple
 						//   calculate dx and dy
 						"float x = v_texcoord.x - 0.5;\n"+
 						"float y = v_texcoord.y - 0.5;\n"+
 						"float r = sqrt(x*x + y*y);\n"+
+						//   make amplitude decrease inverse distance away from center (not distance squared because doesn't really work)
+						"A = A / r;\n"+
 						"float dx = (A * x) / (lambda * r) * cos((u_time + r) / lambda);\n"+
 						"float dy = (A * y) / (lambda * r) * cos((u_time + r) / lambda);\n"+
 						//   do cross product to get normal
@@ -391,6 +393,7 @@ function programBillboard(){
 						"vec2 newTexCoord = vec2(v_texcoord.x + rayToFloor.x, v_texcoord.y + rayToFloor.y);\n"+
 
 						"gl_FragColor = texture2D(u_texture, newTexCoord);\n"+
+						//"gl_FragColor = vec4(dx, 0.0, 0.0, 1.0);\n"+ // FOR DEBUGGING
 					"}\n"+
 					"\n"+
 					"vec3 linInterp(vec3 a, vec3 b, float t) {\n"+ // helper function to linearly interpolate between two vecs
