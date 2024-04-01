@@ -34,6 +34,9 @@ var objParsed;
 // Mirror camera position
 var cameraPositionPrime;
 
+var scriptLoadTime = Date.now();
+var animationSpeed = 0.1;
+
 var billboardProgram;
 var waterHeight=0.5;
 
@@ -265,7 +268,7 @@ function renderBillboard(now){
 	gl.uniform3fv(billboardProgram.lightDirectionUniformLocation, new Float32Array([currentScene.light.locationPoint.x,currentScene.light.locationPoint.y,currentScene.light.locationPoint.z]));
 
 	// Send time (in seconds) to uniform
-	gl.uniform1f(billboardProgram.timeLocation, Date.now() / 1000);
+	gl.uniform1f(billboardProgram.timeLocation, animationSpeed * (Date.now() - scriptLoadTime) / 1000);
 
 	// Send water height to uniform
 	gl.uniform1f(billboardProgram.waterHeightLocation, waterHeight);
@@ -355,9 +358,44 @@ function programBillboard(){
 					"varying vec2 v_texcoord;\n"+
 					"uniform vec3 u_lightDirection;\n"+
 					"uniform sampler2D u_texture;\n"+
+					"uniform float u_time;\n"+
+					"uniform float u_waterHeight;\n"+
+					"vec3 linInterp(vec3 a, vec3 b, float t);\n"+
 					"void main() {\n"+
-						"gl_FragColor = texture2D(u_texture, v_texcoord);\n"+
-					"}";
+						"float A = 0.01;\n"+
+						"float lambda = 0.01;\n"+
+						// 1. calculate normal based on water ripple
+						//   calculate dx and dy
+						"float x = v_texcoord.x - 0.5;\n"+
+						"float y = v_texcoord.y - 0.5;\n"+
+						"float r = sqrt(x*x + y*y);\n"+
+						"float dx = (A * x) / (lambda * r) * cos((u_time + r) / lambda);\n"+
+						"float dy = (A * y) / (lambda * r) * cos((u_time + r) / lambda);\n"+
+						//   do cross product to get normal
+						"vec3 dxVec = vec3(1.0, 0.0, dx);\n"+
+						"vec3 dyVec = vec3(0.0, 1.0, dy);\n"+
+						"vec3 normal = normalize(cross(dxVec, dyVec));\n"+
+						// 2. calculate incident angle
+						"vec3 camDir = vec3(0.0, 0.0, 1.0);\n"+
+						"float incidentAngle = acos(dot(normal, camDir));\n"+
+						// 3. calculate refracted angle (assuming water refracted index is 2)
+						"float refractedAngle = asin(sin(incidentAngle) / 2.0);\n"+
+						// 4. calculate refracted ray direction
+						"vec3 refractedDir = normalize(linInterp(-normal, -camDir, refractedAngle / incidentAngle));\n"+
+						// 5. extrapolate refractedDir vector to bottom of pool floor based on waterHeight
+						//   calculate extra water height due to water wave
+						"float hOfXY = A * sin((u_time + r) / lambda);\n"+
+						"float refScalar = abs((u_waterHeight + hOfXY) / refractedDir.z);\n"+
+						"vec3 rayToFloor = refractedDir * refScalar;\n"+
+						// 6. fix texcoord based on displacement of rayToFloor
+						"vec2 newTexCoord = vec2(v_texcoord.x + rayToFloor.x, v_texcoord.y + rayToFloor.y);\n"+
+
+						"gl_FragColor = texture2D(u_texture, newTexCoord);\n"+
+					"}\n"+
+					"\n"+
+					"vec3 linInterp(vec3 a, vec3 b, float t) {\n"+ // helper function to linearly interpolate between two vecs
+					"	return a * (1.0 - t) + b * t;\n"+
+					"}\n";
 	programBill = webglUtils.createProgramFromSources(gl, [vShaderObj,fShaderObj])
 	
 	// look up where the vertex data needs to go.
