@@ -263,9 +263,12 @@ function renderBillboard(now){
 	
 	// Send the light direction to the uniform.
 	gl.uniform3fv(billboardProgram.lightDirectionUniformLocation, new Float32Array([currentScene.light.locationPoint.x,currentScene.light.locationPoint.y,currentScene.light.locationPoint.z]));
-	
-	//TODO: You need to send "time" and "water height" to the shader program
-	// You can eaither use the uniform location here or you can use your preprocessed uniform location in the program.
+
+	// Send time (in seconds) to uniform
+	gl.uniform1f(billboardProgram.timeLocation, Date.now() / 1000);
+
+	// Send water height to uniform
+	gl.uniform1f(billboardProgram.waterHeightLocation, waterHeight);
 	
 	gl.drawArrays(gl.TRIANGLES, 0, 6);
 }
@@ -314,7 +317,7 @@ function makeBillboardBuffers(){
 }
 
 class BillboardProgram{
-	constructor(program,positionLocationAttrib,normalLocationAttrib,textureLocationAttrib,textureUniformLocation,worldViewProjectionUniformLocation,lightDirectionUniformLocation){
+	constructor(program,positionLocationAttrib,normalLocationAttrib,textureLocationAttrib,textureUniformLocation,worldViewProjectionUniformLocation,lightDirectionUniformLocation,timeLocation,waterHeightLocation){
 		this.program=program;
 		this.positionLocationAttrib=positionLocationAttrib;
 		this.normalLocationAttrib=normalLocationAttrib;
@@ -322,6 +325,8 @@ class BillboardProgram{
 		this.textureUniformLocation=textureUniformLocation;
 		this.worldViewProjectionUniformLocation=worldViewProjectionUniformLocation;
 		this.lightDirectionUniformLocation=lightDirectionUniformLocation;
+		this.timeLocation=timeLocation;
+		this.waterHeightLocation=waterHeightLocation;
 	}
 }
 
@@ -360,14 +365,14 @@ function programBillboard(){
 	normalLocationAttrib = gl.getAttribLocation(programBill, "a_normal");
 	textureLocationAttrib = gl.getAttribLocation(programBill, "a_texcoord");
 	
-	//Optional TODO: You can preprocess required Uniforms to avoid searching for uniforms when rendering.
 	// lookup uniforms
     textureUniformLocation = gl.getUniformLocation(programBill, "u_texture");
 	worldViewProjectionUniformLocation = gl.getUniformLocation(programBill, "u_worldViewProjection");
 	lightDirectionUniformLocation = gl.getUniformLocation(programBill, "u_lightDirection");
+	timeLocation = gl.getUniformLocation(programBill, "u_time");
+	waterHeightLocation = gl.getUniformLocation(programBill, "u_waterHeight");
 	
-	//Optional TODO: You can preprocess required Uniforms to avoid searching for uniforms when rendering.
-	billboardProgram=new BillboardProgram(programBill,positionLocationAttrib,normalLocationAttrib,textureLocationAttrib,textureUniformLocation,worldViewProjectionUniformLocation,lightDirectionUniformLocation);
+	billboardProgram=new BillboardProgram(programBill,positionLocationAttrib,normalLocationAttrib,textureLocationAttrib,textureUniformLocation,worldViewProjectionUniformLocation,lightDirectionUniformLocation,timeLocation,waterHeightLocation);
 }
 
 //The function for parsing PNG is done for you. The output is a an array of RGBA instances.
