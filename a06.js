@@ -385,9 +385,9 @@ function programBillboard(){
 						// 4. calculate refracted ray direction
 						"vec3 refractedDir = normalize(linInterp(-normal, -camDir, refractedAngle / incidentAngle));\n"+
 						// 5. extrapolate refractedDir vector to bottom of pool floor based on waterHeight
-						//   calculate extra water height due to water wave
-						"float hOfXY = A * sin((u_time + r) / lambda);\n"+
-						"float refScalar = abs((u_waterHeight + hOfXY) / refractedDir.z);\n"+
+						//   calculate extra water height due to water wave (removed)
+						//"float hOfXY = A * sin((u_time + r) / lambda);\n"+
+						"float refScalar = abs((u_waterHeight) / refractedDir.z);\n"+
 						"vec3 rayToFloor = refractedDir * refScalar;\n"+
 						// 6. fix texcoord based on displacement of rayToFloor
 						"vec2 newTexCoord = vec2(v_texcoord.x + rayToFloor.x, v_texcoord.y + rayToFloor.y);\n"+
