@@ -35,7 +35,7 @@ var objParsed;
 var cameraPositionPrime;
 
 var scriptLoadTime = Date.now();
-var animationSpeed = 0.1;
+var animationSpeed = -0.1;
 
 var billboardProgram;
 var waterHeight=0.5;
