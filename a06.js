@@ -410,6 +410,15 @@ function programBillboard(){
 
 						"gl_FragColor = texture2D(u_texture, newTexCoord);\n"+
 						"gl_FragColor.rgb *= u_rfRatio;\n"+
+						// 7. do reflection lighting
+						//   find reflected direction (https://www.geogebra.org/classic/dhuxtmcx)
+						//   reflected direction = normal + (normal - camDir)
+						"vec3 reflectedDir = normalize(normal + (normal - camDir));\n"+
+						//   calculate dot product between reflected direction and sun direction
+						"float refVal = abs(dot(reflectedDir, normalize(u_lightDirection)));\n"+
+						//   apply lighting
+						"gl_FragColor.rgb += (1.0 - u_rfRatio) * refVal * vec3(1.0, 1.0, 1.0);\n"+
+
 						//"gl_FragColor = vec4(dx, 0.0, 0.0, 1.0);\n"+ // FOR DEBUGGING
 					"}\n"+
 					"\n"+
