@@ -283,6 +283,9 @@ function renderBillboard(now){
 
 	// Send water height to uniform
 	gl.uniform1f(billboardProgram.waterHeightLocation, waterHeight);
+
+	// Send reflection/refraction ratio to uniform
+	gl.uniform1f(billboardProgram.rfLocation, rfRatio);
 	
 	gl.drawArrays(gl.TRIANGLES, 0, 6);
 }
@@ -331,7 +334,7 @@ function makeBillboardBuffers(){
 }
 
 class BillboardProgram{
-	constructor(program,positionLocationAttrib,normalLocationAttrib,textureLocationAttrib,textureUniformLocation,worldViewProjectionUniformLocation,lightDirectionUniformLocation,timeLocation,waterHeightLocation){
+	constructor(program,positionLocationAttrib,normalLocationAttrib,textureLocationAttrib,textureUniformLocation,worldViewProjectionUniformLocation,lightDirectionUniformLocation,timeLocation,waterHeightLocation,rfLocation){
 		this.program=program;
 		this.positionLocationAttrib=positionLocationAttrib;
 		this.normalLocationAttrib=normalLocationAttrib;
@@ -341,6 +344,7 @@ class BillboardProgram{
 		this.lightDirectionUniformLocation=lightDirectionUniformLocation;
 		this.timeLocation=timeLocation;
 		this.waterHeightLocation=waterHeightLocation;
+		this.rfLocation=rfLocation;
 	}
 }
 
@@ -371,6 +375,7 @@ function programBillboard(){
 					"uniform sampler2D u_texture;\n"+
 					"uniform float u_time;\n"+
 					"uniform float u_waterHeight;\n"+
+					"uniform float u_rfRatio;\n"+
 					"vec3 linInterp(vec3 a, vec3 b, float t);\n"+
 					"void main() {\n"+
 						"float A = 0.01;\n"+
@@ -404,6 +409,7 @@ function programBillboard(){
 						"vec2 newTexCoord = vec2(v_texcoord.x + rayToFloor.x, v_texcoord.y + rayToFloor.y);\n"+
 
 						"gl_FragColor = texture2D(u_texture, newTexCoord);\n"+
+						"gl_FragColor.rgb *= u_rfRatio;\n"+
 						//"gl_FragColor = vec4(dx, 0.0, 0.0, 1.0);\n"+ // FOR DEBUGGING
 					"}\n"+
 					"\n"+
@@ -423,8 +429,9 @@ function programBillboard(){
 	lightDirectionUniformLocation = gl.getUniformLocation(programBill, "u_lightDirection");
 	timeLocation = gl.getUniformLocation(programBill, "u_time");
 	waterHeightLocation = gl.getUniformLocation(programBill, "u_waterHeight");
+	rfLocation = gl.getUniformLocation(programBill, "u_rfRatio");
 	
-	billboardProgram=new BillboardProgram(programBill,positionLocationAttrib,normalLocationAttrib,textureLocationAttrib,textureUniformLocation,worldViewProjectionUniformLocation,lightDirectionUniformLocation,timeLocation,waterHeightLocation);
+	billboardProgram=new BillboardProgram(programBill,positionLocationAttrib,normalLocationAttrib,textureLocationAttrib,textureUniformLocation,worldViewProjectionUniformLocation,lightDirectionUniformLocation,timeLocation,waterHeightLocation,rfLocation);
 }
 
 //The function for parsing PNG is done for you. The output is a an array of RGBA instances.
