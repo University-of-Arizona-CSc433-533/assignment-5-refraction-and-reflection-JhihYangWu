@@ -38,8 +38,8 @@ var scriptLoadTime = Date.now();
 var animationSpeed = -0.1;
 
 var billboardProgram;
-var waterHeight=0.5;
-var rfRatio = 0.5;
+var waterHeight=0.2;
+var rfRatio = 0.7;
 
 var wh = document.getElementById('whID');//Slider for water height
 
