@@ -39,6 +39,7 @@ var animationSpeed = -0.1;
 
 var billboardProgram;
 var waterHeight=0.5;
+var rfRatio = 0.5;
 
 var wh = document.getElementById('whID');//Slider for water height
 
@@ -50,6 +51,16 @@ wh.addEventListener("input", function(evt) {
 		wh.label = "Water height: "+wh.value;//refresh wh text
 	}
 },false);
+
+var rf = document.getElementById("rfID");//Slider for reflection/refraction ratio
+
+rf.addEventListener("input", (e) => {
+	if (doneLoading==true) {
+		rfRatio = Number(rf.value);
+		document.getElementById("rfLabelID").innerHTML = rf.value;
+		rf.label = "Reflection/Refraction ratio: "+rf.value;//refresh rf text
+	}
+}, false);
 
 function readScene()//This is the function that is called after user selects multiple files of images and scenes
 {
