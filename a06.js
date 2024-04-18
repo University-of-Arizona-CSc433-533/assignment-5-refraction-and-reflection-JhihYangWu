@@ -28,6 +28,7 @@ var doneLoading=false;//Checks if the scene is done loading to prevent renderer 
 var doneProgramming=false;
 var filesToRead=[];//List of files to be read
 var imageData;//The image contents are stored separately here
+var reflectionImg; // image surrounding the pool
 var scene;//The code can save multiple scenes but no HTML element is made to give user option of switching scenes without selecting file agail. By default the firt scene is shown and the other selected scenes are just stored.
 var objParsed;
 
@@ -132,7 +133,11 @@ function readScene()//This is the function that is called after user selects mul
 							ctx.putImageData(showCaseData, dummy_canvas.width/2 - width/2, dummy_canvas.height/2 - height/2);
 							
 							let imageRead=ctx.getImageData(0, 0, dummy_canvas.width, dummy_canvas.height);
-							imageData=imageRead;
+							if (fileName != "tree_sky.png") {
+								imageData=imageRead;
+							} else {
+								reflectionImg=imageRead;
+							}
 							filesToRead[index]=false;
 						});
 					}
@@ -274,6 +279,9 @@ function renderBillboard(now){
 	
 	// Tell the shader to use texture unit 0 for u_texture
     gl.uniform1i(billboardProgram.textureUniformLocation, 0);
+
+	// Tell the shader to use texture unit 1 for U_reflectTexture
+    gl.uniform1i(billboardProgram.reflectTextureUniformLocation, 1);
 	
 	// Send the light direction to the uniform.
 	gl.uniform3fv(billboardProgram.lightDirectionUniformLocation, new Float32Array([currentScene.light.locationPoint.x,currentScene.light.locationPoint.y,currentScene.light.locationPoint.z]));
@@ -329,12 +337,21 @@ function makeBillboardBuffers(){
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
     gl.generateMipmap(gl.TEXTURE_2D);
+
+	// Create texture for reflection
+	var billboardReflectTextureBuffer = gl.createTexture();
+	gl.activeTexture(gl.TEXTURE1);
+	gl.bindTexture(gl.TEXTURE_2D, billboardReflectTextureBuffer);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA,gl.UNSIGNED_BYTE, reflectionImg);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+    gl.generateMipmap(gl.TEXTURE_2D);
   
-    sceneBillboard.setBuffers(billboardPositionBuffer,billboardTextcoordBuffer,billboardNormalBuffer,billboardTextureBuffer);
+    sceneBillboard.setBuffers(billboardPositionBuffer,billboardTextcoordBuffer,billboardNormalBuffer,billboardTextureBuffer,billboardReflectTextureBuffer);
 }
 
 class BillboardProgram{
-	constructor(program,positionLocationAttrib,normalLocationAttrib,textureLocationAttrib,textureUniformLocation,worldViewProjectionUniformLocation,lightDirectionUniformLocation,timeLocation,waterHeightLocation,rfLocation){
+	constructor(program,positionLocationAttrib,normalLocationAttrib,textureLocationAttrib,textureUniformLocation,worldViewProjectionUniformLocation,lightDirectionUniformLocation,timeLocation,waterHeightLocation,rfLocation, reflectTextureUniformLocation){
 		this.program=program;
 		this.positionLocationAttrib=positionLocationAttrib;
 		this.normalLocationAttrib=normalLocationAttrib;
@@ -345,6 +362,7 @@ class BillboardProgram{
 		this.timeLocation=timeLocation;
 		this.waterHeightLocation=waterHeightLocation;
 		this.rfLocation=rfLocation;
+		this.reflectTextureUniformLocation = reflectTextureUniformLocation;
 	}
 }
 
@@ -373,6 +391,7 @@ function programBillboard(){
 					"varying vec2 v_texcoord;\n"+
 					"uniform vec3 u_lightDirection;\n"+
 					"uniform sampler2D u_texture;\n"+
+					"uniform sampler2D u_reflectTexture;\n"+
 					"uniform float u_time;\n"+
 					"uniform float u_waterHeight;\n"+
 					"uniform float u_rfRatio;\n"+
@@ -434,13 +453,14 @@ function programBillboard(){
 	
 	// lookup uniforms
     textureUniformLocation = gl.getUniformLocation(programBill, "u_texture");
+    reflectTextureUniformLocation = gl.getUniformLocation(programBill, "u_reflectTexture");
 	worldViewProjectionUniformLocation = gl.getUniformLocation(programBill, "u_worldViewProjection");
 	lightDirectionUniformLocation = gl.getUniformLocation(programBill, "u_lightDirection");
 	timeLocation = gl.getUniformLocation(programBill, "u_time");
 	waterHeightLocation = gl.getUniformLocation(programBill, "u_waterHeight");
 	rfLocation = gl.getUniformLocation(programBill, "u_rfRatio");
 	
-	billboardProgram=new BillboardProgram(programBill,positionLocationAttrib,normalLocationAttrib,textureLocationAttrib,textureUniformLocation,worldViewProjectionUniformLocation,lightDirectionUniformLocation,timeLocation,waterHeightLocation,rfLocation);
+	billboardProgram=new BillboardProgram(programBill,positionLocationAttrib,normalLocationAttrib,textureLocationAttrib,textureUniformLocation,worldViewProjectionUniformLocation,lightDirectionUniformLocation,timeLocation,waterHeightLocation,rfLocation, reflectTextureUniformLocation);
 }
 
 //The function for parsing PNG is done for you. The output is a an array of RGBA instances.
@@ -752,11 +772,12 @@ class Billboard{
 		this.ambient=ambient;
 	}
 	
-	setBuffers(positionBuffer,textureBuffer,normalBuffer,billboardTextureBuffer){
+	setBuffers(positionBuffer,textureBuffer,normalBuffer,billboardTextureBuffer,billboardReflectTextureBuffer){
 		this.positionBuffer=positionBuffer;
 		this.textureBuffer=textureBuffer;
 		this.normalBuffer=normalBuffer;
 		this.billboardTextureBuffer=billboardTextureBuffer;
+		this.billboardReflectTextureBuffer = billboardReflectTextureBuffer;
 	}
 }
 
