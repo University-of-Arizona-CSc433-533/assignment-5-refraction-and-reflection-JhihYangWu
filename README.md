@@ -4,7 +4,7 @@ Template code for A04
 Author: JhihYang Wu [jhihyangwu@arizona.edu]
 Date: April 10, 2024
 
-Executing program: simply open index.html using a modern browser and then click on choose files navigate to materials directory and select/upload one .js file and one .png file. the scene should render shortly you can play with the water height and reflection refraction ratio using the sliders below.
+Executing program: simply open index.html using a modern browser and then click on choose files navigate to materials directory and select/upload (f-texture2.png, scene1.js, tree_sky.png) or (f-texture.png, scene1.js, tree_sky.png). the scene should render shortly you can play with the water height and reflection refraction ratio using the sliders below.
 
 Description: this assignment mostly demonstrates how snell law can be implemented in fragment shader by querying a different texture coordinate based the normal of a wave, snell's law, water height, etc. Lighting is also applied through the dot product between the reflected direction (based on normal of water) and the sun's direction. I also made the wave a little more realistic by decreasing the amplitude linearly with respect to the distance from the center (radius).
 
