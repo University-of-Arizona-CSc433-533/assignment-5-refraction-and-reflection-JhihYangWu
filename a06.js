@@ -435,8 +435,29 @@ function programBillboard(){
 						"vec3 reflectedDir = normalize(normal + (normal - camDir));\n"+
 						//   calculate dot product between reflected direction and sun direction
 						"float refVal = abs(dot(reflectedDir, normalize(u_lightDirection)));\n"+
-						//   apply lighting
-						"gl_FragColor.rgb += (1.0 - u_rfRatio) * refVal * vec3(1.0, 1.0, 1.0);\n"+
+						"refVal = (refVal + 1.0) / 2.0;\n"+
+
+						// rotate vector 45 degrees and extrapolate to walls surrounding pool
+						`mat3 rotMat = mat3(
+							0.70711, 0.70711, 0.0,
+							-0.70711, 0.70711, 0.0,
+							0.0, 0.0, 1.0
+						);
+						reflectedDir = rotMat * reflectedDir;
+						reflectedDir = vec3(abs(reflectedDir.x),
+											abs(reflectedDir.y),
+											abs(reflectedDir.z));
+						reflectedDir = normalize(reflectedDir);
+						
+						float t = (0.70711 / (reflectedDir.y/reflectedDir.x + 1.0)) / reflectedDir.x;
+						vec3 extrapolated = t * reflectedDir;
+						vec3 e = vec3(abs(extrapolated.x), abs(extrapolated.y), abs(extrapolated.z));\n`+
+
+						// query correct texture coord from u_reflectTexture based on extrapolated vector
+						`if (e.z > 1.0) e.z = 0.999;
+						vec2 refTexCoord = vec2(e.y, e.z);
+						vec4 tmp = texture2D(u_reflectTexture, refTexCoord);
+						gl_FragColor.rgb += (1.0 - u_rfRatio) * refVal * tmp.xyz;\n`+
 
 						//"gl_FragColor = vec4(dx, 0.0, 0.0, 1.0);\n"+ // FOR DEBUGGING
 					"}\n"+
