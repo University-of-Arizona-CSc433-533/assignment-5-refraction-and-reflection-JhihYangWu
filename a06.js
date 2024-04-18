@@ -455,7 +455,7 @@ function programBillboard(){
 
 						// query correct texture coord from u_reflectTexture based on extrapolated vector
 						`if (e.z > 1.0) e.z = 0.999;
-						vec2 refTexCoord = vec2(e.y, e.z);
+						vec2 refTexCoord = vec2(e.y, 1.0 - e.z);
 						vec4 tmp = texture2D(u_reflectTexture, refTexCoord);
 						gl_FragColor.rgb += (1.0 - u_rfRatio) * refVal * tmp.xyz;\n`+
 
