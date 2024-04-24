@@ -455,7 +455,7 @@ function programBillboard(){
 						//   do cross product to get normal
 						"vec3 dxVec = vec3(1.0, 0.0, dx);\n"+
 						"vec3 dyVec = vec3(0.0, 1.0, dy);\n"+
-						"vec3 normal = normalize(cross(dxVec, dyVec));\n"+
+						"vec3 normal = -normalize(cross(dxVec, dyVec));\n"+
 						// 2. calculate incident angle
 						"vec3 camDir = vec3(0.0, 0.0, 1.0);\n"+
 						"float incidentAngle = acos(dot(normal, camDir));\n"+
@@ -477,33 +477,34 @@ function programBillboard(){
 						//   find reflected direction (https://www.geogebra.org/classic/dhuxtmcx)
 						//   reflected direction = normal + (normal - camDir)
 						"vec3 reflectedDir = normalize(normal + (normal - camDir));\n"+
-						//   calculate dot product between reflected direction and sun direction
-						"float refVal = abs(dot(reflectedDir, normalize(u_lightDirection)));\n"+
-						"refVal = (refVal + 1.0) / 2.0;\n"+
-
-						// rotate vector 45 degrees and extrapolate to walls surrounding pool
-						`mat3 rotMat = mat3(
-							0.70711, 0.70711, 0.0,
-							-0.70711, 0.70711, 0.0,
-							0.0, 0.0, 1.0
-						);
-						reflectedDir = rotMat * reflectedDir;
-						reflectedDir = vec3(abs(reflectedDir.x),
-											abs(reflectedDir.y),
-											abs(reflectedDir.z));
-						reflectedDir = normalize(reflectedDir);
-						
-						float t = (0.70711 / (reflectedDir.y/reflectedDir.x + 1.0)) / reflectedDir.x;
-						vec3 extrapolated = t * reflectedDir;
-						vec3 e = vec3(abs(extrapolated.x), abs(extrapolated.y), abs(extrapolated.z));\n`+
-
-						// query correct texture coord from u_reflectTexture based on extrapolated vector
-						`if (e.z > 1.0) e.z = 0.999;
-						vec2 refTexCoord = vec2(e.y, 1.0 - e.z);
-						vec4 tmp = texture2D(u_reflectTexture, refTexCoord);
-						gl_FragColor.rgb += (1.0 - u_rfRatio) * refVal * tmp.xyz;\n`+
-
-						//"gl_FragColor = vec4(dx, 0.0, 0.0, 1.0);\n"+ // FOR DEBUGGING
+						//   do ray tracing on 4 surrounding billboards
+						//     find time of intersection
+						//     t = (lowerLeft . normal - eye . normal) / (rayDir . normal)
+						//     +x to right of canvas
+						//     +y to bottom of canvas
+						//     +z into the canvas
+						//     lowerLeft = (0, 0, 0)    top left of canvas
+						//     normal = (0, 1, 0)    towards bottom
+						//     eye = (v_texcoord.x, v_texcoord.y, 0)    where ray originates from
+						//     rayDir = reflectedDir
+						`vec3 lowerLeft = vec3(0.0, 0.0, 0.0);
+						vec3 refNormal = vec3(0.0, 1.0, 0.0);
+						vec3 eye = vec3(v_texcoord.x, v_texcoord.y, 0.0);
+						float t = (dot(lowerLeft, refNormal) - dot(eye, refNormal)) / dot(reflectedDir, refNormal);
+						if (t > 0.0) {
+						    vec3 hitPt = eye + t * reflectedDir;
+						    vec3 p = hitPt - lowerLeft;
+						    vec3 lowerRightMinusLeft = vec3(1.0, 0.0, 0.0);
+						    vec3 upperMinusLowerLeft = vec3(0.0, 0.0, -1.0);
+						    float alpha = dot(p, lowerRightMinusLeft);
+						    float beta = dot(p, upperMinusLowerLeft);
+						    if (alpha > 0.0 && alpha < 1.0 &&
+						    	beta > 0.0  && beta < 1.0) {
+						    	vec2 surroundingCoord = vec2(alpha, 1.0 - beta);
+						    	gl_FragColor.rgb += (1.0 - u_rfRatio) * texture2D(u_reflectTexture, surroundingCoord).rgb;
+						    }
+						}
+						`+
 					"}\n"+
 					"\n"+
 					"vec3 linInterp(vec3 a, vec3 b, float t) {\n"+ // helper function to linearly interpolate between two vecs
