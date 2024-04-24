@@ -41,6 +41,7 @@ var animationSpeed = -0.1;
 var billboardProgram;
 var waterHeight=0.2;
 var rfRatio = 0.7;
+var amplitude = 0.01;
 
 var wh = document.getElementById('whID');//Slider for water height
 
@@ -60,6 +61,16 @@ rf.addEventListener("input", (e) => {
 		rfRatio = Number(rf.value);
 		document.getElementById("rfLabelID").innerHTML = rf.value;
 		rf.label = "Reflection/Refraction ratio: "+rf.value;//refresh rf text
+	}
+}, false);
+
+var amp = document.getElementById("ampID");//Slider for water amplitude
+
+amp.addEventListener("input", (e) => {
+	if (doneLoading==true) {
+		amplitude = Number(amp.value);
+		document.getElementById("amplitudeLabelID").innerHTML = amp.value;
+		amp.label = "Wave amplitude: "+amp.value;//refresh amp text
 	}
 }, false);
 
@@ -294,6 +305,9 @@ function renderBillboard(now){
 
 	// Send reflection/refraction ratio to uniform
 	gl.uniform1f(billboardProgram.rfLocation, rfRatio);
+
+	// Send amplitude to uniform
+	gl.uniform1f(billboardProgram.amplitudeLoc, amplitude);
 	
 	gl.drawArrays(gl.TRIANGLES, 0, 6);
 }
@@ -351,7 +365,7 @@ function makeBillboardBuffers(){
 }
 
 class BillboardProgram{
-	constructor(program,positionLocationAttrib,normalLocationAttrib,textureLocationAttrib,textureUniformLocation,worldViewProjectionUniformLocation,lightDirectionUniformLocation,timeLocation,waterHeightLocation,rfLocation, reflectTextureUniformLocation){
+	constructor(program,positionLocationAttrib,normalLocationAttrib,textureLocationAttrib,textureUniformLocation,worldViewProjectionUniformLocation,lightDirectionUniformLocation,timeLocation,waterHeightLocation,rfLocation, amplitudeLoc, reflectTextureUniformLocation){
 		this.program=program;
 		this.positionLocationAttrib=positionLocationAttrib;
 		this.normalLocationAttrib=normalLocationAttrib;
@@ -362,6 +376,7 @@ class BillboardProgram{
 		this.timeLocation=timeLocation;
 		this.waterHeightLocation=waterHeightLocation;
 		this.rfLocation=rfLocation;
+		this.amplitudeLoc=amplitudeLoc;
 		this.reflectTextureUniformLocation = reflectTextureUniformLocation;
 	}
 }
@@ -395,17 +410,16 @@ function programBillboard(){
 					"uniform float u_time;\n"+
 					"uniform float u_waterHeight;\n"+
 					"uniform float u_rfRatio;\n"+
+					"uniform float u_amplitude;\n"+
 					"vec3 linInterp(vec3 a, vec3 b, float t);\n"+
 					"void main() {\n"+
-						"float A = 0.01;\n"+
+						"float A = u_amplitude;\n"+
 						"float lambda = 0.02;\n"+
 						// 1. calculate normal based on water ripple
 						//   calculate dx and dy
 						"float x = v_texcoord.x - 0.5;\n"+
 						"float y = v_texcoord.y - 0.5;\n"+
 						"float r = sqrt(x*x + y*y);\n"+
-						//   make amplitude decrease inverse distance away from center (not distance squared because doesn't really work)
-						"A = A / r;\n"+
 						"float dx = (A * x) / (lambda * r) * cos((u_time + r) / lambda);\n"+
 						"float dy = (A * y) / (lambda * r) * cos((u_time + r) / lambda);\n"+
 						//   do cross product to get normal
@@ -480,8 +494,9 @@ function programBillboard(){
 	timeLocation = gl.getUniformLocation(programBill, "u_time");
 	waterHeightLocation = gl.getUniformLocation(programBill, "u_waterHeight");
 	rfLocation = gl.getUniformLocation(programBill, "u_rfRatio");
+	amplitudeLoc = gl.getUniformLocation(programBill, "u_amplitude")
 	
-	billboardProgram=new BillboardProgram(programBill,positionLocationAttrib,normalLocationAttrib,textureLocationAttrib,textureUniformLocation,worldViewProjectionUniformLocation,lightDirectionUniformLocation,timeLocation,waterHeightLocation,rfLocation, reflectTextureUniformLocation);
+	billboardProgram=new BillboardProgram(programBill,positionLocationAttrib,normalLocationAttrib,textureLocationAttrib,textureUniformLocation,worldViewProjectionUniformLocation,lightDirectionUniformLocation,timeLocation,waterHeightLocation,rfLocation, amplitudeLoc, reflectTextureUniformLocation);
 }
 
 //The function for parsing PNG is done for you. The output is a an array of RGBA instances.
