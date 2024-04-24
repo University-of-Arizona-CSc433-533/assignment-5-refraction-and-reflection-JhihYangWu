@@ -442,7 +442,7 @@ function programBillboard(){
 					"uniform float u_amplitude;\n"+
 					"uniform float u_lambda;\n"+
 					"vec3 linInterp(vec3 a, vec3 b, float t);\n"+
-					"vec3 findReflection(vec2 v_texcoord, vec3 reflectedDir);\n"+
+					"vec3 findReflection(vec2 v_texcoord, vec3 reflectedDir, int i);\n"+
 					"void main() {\n"+
 						"float A = u_amplitude;\n"+
 						"float lambda = u_lambda;\n"+
@@ -479,10 +479,13 @@ function programBillboard(){
 						//   reflected direction = normal + (normal - camDir)
 						"vec3 reflectedDir = normalize(normal + (normal - camDir));\n"+
 						//   do ray tracing on 4 surrounding billboards
-						"gl_FragColor.rgb += findReflection(v_texcoord, reflectedDir);\n"+
+						"gl_FragColor.rgb += findReflection(v_texcoord, reflectedDir, 0);\n"+
+						"gl_FragColor.rgb += findReflection(v_texcoord, reflectedDir, 1);\n"+
+						"gl_FragColor.rgb += findReflection(v_texcoord, reflectedDir, 2);\n"+
+						"gl_FragColor.rgb += findReflection(v_texcoord, reflectedDir, 3);\n"+
 					"}\n"+
 					"\n"+
-					`vec3 findReflection(vec2 texcoord, vec3 reflectedDir) {
+					`vec3 findReflection(vec2 texcoord, vec3 reflectedDir, int i) {
 						//     find time of intersection
 						//     t = (lowerLeft . normal - eye . normal) / (rayDir . normal)
 						//     +x to right of canvas
@@ -494,13 +497,27 @@ function programBillboard(){
 						//     rayDir = reflectedDir
 						vec3 lowerLeft = vec3(0.0, 0.0, 0.0);
 						vec3 refNormal = vec3(0.0, 1.0, 0.0);
+						vec3 lowerRightMinusLeft = vec3(1.0, 0.0, 0.0);
+						vec3 upperMinusLowerLeft = vec3(0.0, 0.0, -1.0);
+						if (i == 1) {
+							lowerLeft = vec3(0.0, 1.0, 0.0);
+							refNormal = vec3(1.0, 0.0, 0.0);
+							lowerRightMinusLeft = vec3(0.0, -1.0, 0.0);
+						} else if (i == 2) {
+							lowerLeft = vec3(1.0, 0.0, 0.0);
+							refNormal = vec3(-1.0, 0.0, 0.0);
+							lowerRightMinusLeft = vec3(0.0, 1.0, 0.0);
+						} else if (i == 3) {
+							lowerLeft = vec3(1.0, 1.0, 0.0);
+							refNormal = vec3(0.0, -1.0, 0.0);
+							lowerRightMinusLeft = vec3(-1.0, 0.0, 0.0);
+						}
+
 						vec3 eye = vec3(texcoord.x, texcoord.y, 0.0);
 						float t = (dot(lowerLeft, refNormal) - dot(eye, refNormal)) / dot(reflectedDir, refNormal);
 						if (t > 0.0) {
 						    vec3 hitPt = eye + t * reflectedDir;
 						    vec3 p = hitPt - lowerLeft;
-						    vec3 lowerRightMinusLeft = vec3(1.0, 0.0, 0.0);
-						    vec3 upperMinusLowerLeft = vec3(0.0, 0.0, -1.0);
 						    float alpha = dot(p, lowerRightMinusLeft);
 						    float beta = dot(p, upperMinusLowerLeft);
 						    if (alpha > 0.0 && alpha < 1.0 &&
