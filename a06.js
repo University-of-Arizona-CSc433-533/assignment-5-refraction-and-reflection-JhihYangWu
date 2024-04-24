@@ -35,7 +35,7 @@ var objParsed;
 // Mirror camera position
 var cameraPositionPrime;
 
-var scriptLoadTime = Date.now();
+var prevTime = Date.now();
 var animationSpeed = -0.1;
 
 var billboardProgram;
@@ -43,6 +43,8 @@ var waterHeight=0.2;
 var rfRatio = 0.7;
 var amplitude = 0.01;
 var lambda = 0.02;
+var paused = false;
+var timeNow = 0.0;
 
 var wh = document.getElementById('whID');//Slider for water height
 
@@ -84,6 +86,12 @@ lam.addEventListener("input", (e) => {
 		lam.label = "Wavelength lambda: "+lam.value;//refresh lam text
 	}
 }, false);
+
+var playStop = document.getElementById("playID");
+
+playStop.addEventListener("input", (e) => {
+	paused = playStop.checked;
+})
 
 function readScene()//This is the function that is called after user selects multiple files of images and scenes
 {
@@ -309,7 +317,13 @@ function renderBillboard(now){
 	gl.uniform3fv(billboardProgram.lightDirectionUniformLocation, new Float32Array([currentScene.light.locationPoint.x,currentScene.light.locationPoint.y,currentScene.light.locationPoint.z]));
 
 	// Send time (in seconds) to uniform
-	gl.uniform1f(billboardProgram.timeLocation, animationSpeed * (Date.now() - scriptLoadTime) / 1000);
+	var dateNow = Date.now();
+	var deltaTime = dateNow - prevTime;
+	if (!paused) {
+		timeNow += deltaTime;
+	}
+	prevTime = dateNow;
+	gl.uniform1f(billboardProgram.timeLocation, animationSpeed * timeNow / 1000);
 
 	// Send water height to uniform
 	gl.uniform1f(billboardProgram.waterHeightLocation, waterHeight);
