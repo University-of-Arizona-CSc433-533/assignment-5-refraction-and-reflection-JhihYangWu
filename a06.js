@@ -442,6 +442,7 @@ function programBillboard(){
 					"uniform float u_amplitude;\n"+
 					"uniform float u_lambda;\n"+
 					"vec3 linInterp(vec3 a, vec3 b, float t);\n"+
+					"vec3 findReflection(vec2 v_texcoord, vec3 reflectedDir);\n"+
 					"void main() {\n"+
 						"float A = u_amplitude;\n"+
 						"float lambda = u_lambda;\n"+
@@ -478,6 +479,10 @@ function programBillboard(){
 						//   reflected direction = normal + (normal - camDir)
 						"vec3 reflectedDir = normalize(normal + (normal - camDir));\n"+
 						//   do ray tracing on 4 surrounding billboards
+						"gl_FragColor.rgb += findReflection(v_texcoord, reflectedDir);\n"+
+					"}\n"+
+					"\n"+
+					`vec3 findReflection(vec2 texcoord, vec3 reflectedDir) {
 						//     find time of intersection
 						//     t = (lowerLeft . normal - eye . normal) / (rayDir . normal)
 						//     +x to right of canvas
@@ -485,11 +490,11 @@ function programBillboard(){
 						//     +z into the canvas
 						//     lowerLeft = (0, 0, 0)    top left of canvas
 						//     normal = (0, 1, 0)    towards bottom
-						//     eye = (v_texcoord.x, v_texcoord.y, 0)    where ray originates from
+						//     eye = (texcoord.x, texcoord.y, 0)    where ray originates from
 						//     rayDir = reflectedDir
-						`vec3 lowerLeft = vec3(0.0, 0.0, 0.0);
+						vec3 lowerLeft = vec3(0.0, 0.0, 0.0);
 						vec3 refNormal = vec3(0.0, 1.0, 0.0);
-						vec3 eye = vec3(v_texcoord.x, v_texcoord.y, 0.0);
+						vec3 eye = vec3(texcoord.x, texcoord.y, 0.0);
 						float t = (dot(lowerLeft, refNormal) - dot(eye, refNormal)) / dot(reflectedDir, refNormal);
 						if (t > 0.0) {
 						    vec3 hitPt = eye + t * reflectedDir;
@@ -501,12 +506,12 @@ function programBillboard(){
 						    if (alpha > 0.0 && alpha < 1.0 &&
 						    	beta > 0.0  && beta < 1.0) {
 						    	vec2 surroundingCoord = vec2(alpha, 1.0 - beta);
-						    	gl_FragColor.rgb += (1.0 - u_rfRatio) * texture2D(u_reflectTexture, surroundingCoord).rgb;
+						    	return (1.0 - u_rfRatio) * texture2D(u_reflectTexture, surroundingCoord).rgb;
 						    }
 						}
-						`+
-					"}\n"+
-					"\n"+
+						return vec3(0.0, 0.0, 0.0);
+					}
+					`+
 					"vec3 linInterp(vec3 a, vec3 b, float t) {\n"+ // helper function to linearly interpolate between two vecs
 					"	return a * (1.0 - t) + b * t;\n"+
 					"}\n";
