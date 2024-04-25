@@ -458,7 +458,7 @@ function programBillboard(){
 						"vec3 dyVec = vec3(0.0, 1.0, dy);\n"+
 						"vec3 normal = -normalize(cross(dxVec, dyVec));\n"+
 						// 2. calculate incident angle
-						"vec3 camDir = vec3(0.0, 0.0, 1.0);\n"+
+						"vec3 camDir = vec3(0.0, 0.0, -1.0);\n"+
 						"float incidentAngle = acos(dot(normal, camDir));\n"+
 						// 3. calculate refracted angle (assuming water refracted index is 2)
 						"float refractedAngle = asin(sin(incidentAngle) / 2.0);\n"+
@@ -471,9 +471,9 @@ function programBillboard(){
 						"vec3 rayToFloor = refractedDir * refScalar;\n"+
 						// 6. fix texcoord based on displacement of rayToFloor
 						"vec2 newTexCoord = vec2(v_texcoord.x + rayToFloor.x, v_texcoord.y + rayToFloor.y);\n"+
-
 						"gl_FragColor = texture2D(u_texture, newTexCoord);\n"+
 						"gl_FragColor.rgb *= u_rfRatio;\n"+
+
 						// 7. do reflection lighting
 						//   find reflected direction (https://www.geogebra.org/classic/dhuxtmcx)
 						//   reflected direction = normal + (normal - camDir)
